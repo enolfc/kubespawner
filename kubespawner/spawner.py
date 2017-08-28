@@ -744,8 +744,10 @@ class KubeSpawner(Spawner):
 
     @gen.coroutine
     def start(self):
+        self.log.info("STORAGE PVC ENSURE " + self.user_storage_pvc_ensure)
         if self.user_storage_pvc_ensure:
             pvc = self.get_pvc_manifest()
+            self.log.info("PVC " + pvc)
             try:
                 yield self.asynchronize(
                     self.api.create_namespaced_persistent_volume_claim,
@@ -756,6 +758,7 @@ class KubeSpawner(Spawner):
                 if e.status == 409:
                     self.log.info("PVC " + self.pvc_name + " already exists, so did not create new pvc.")
                 else:
+                    self.log.info("PUM " + e)
                     raise
 
         # If we run into a 409 Conflict error, it means a pod with the
