@@ -16,6 +16,8 @@ from kubernetes.client.models.v1_resource_requirements import V1ResourceRequirem
 from kubernetes.client.models.v1_persistent_volume_claim import V1PersistentVolumeClaim
 from kubernetes.client.models.v1_persistent_volume_claim_spec import V1PersistentVolumeClaimSpec
 
+from kubernetes.client.models.v1_label_selector import V1LabelSelector
+
 
 def make_pod(
     name,
@@ -171,7 +173,8 @@ def make_pvc(
     storage_class,
     access_modes,
     storage,
-    labels
+    labels,
+    label_selector
     ):
     """
     Make a k8s pvc specification for running a user notebook.
@@ -202,5 +205,8 @@ def make_pvc(
     pvc.spec.access_modes = access_modes
     pvc.spec.resources = V1ResourceRequirements()
     pvc.spec.resources.requests = {"storage": storage}
+    if label_selector:
+        pvc.spec.selector = V1LabelSelector()
+        pvc.spec.selector.match_labels = label_selector
 
     return pvc

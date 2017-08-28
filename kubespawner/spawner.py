@@ -175,6 +175,17 @@ class KubeSpawner(Spawner):
         """
     )
 
+    user_storage_pvc_selector = Dict(
+        {},
+        config=True,
+        help="""
+        Selector labels to set on the user PVCs.
+
+        {username} and {userid} are expanded to the escaped, dns-label safe
+        username & integer user id respectively, wherever they are used.
+        """
+    )
+
     pvc_name_template = Unicode(
         'claim-{username}',
         config=True,
@@ -675,12 +686,15 @@ class KubeSpawner(Spawner):
         }
 
         labels.update(self._expand_all(self.user_storage_extra_labels))
+        label_selector = self._expand_all(self.user_storage_pvc_selector)
+        self.log.info("SEL %s" % label_selector)
         return make_pvc(
             name=self.pvc_name,
             storage_class=self.user_storage_class,
             access_modes=self.user_storage_access_modes,
             storage=self.user_storage_capacity,
-            labels=labels
+            labels=labels,
+            label_selector=label_selector
         )
 
     def is_pod_running(self, pod):
