@@ -590,12 +590,15 @@ class KubeSpawner(Spawner):
         False,
         config=True,
         help='If shared storage is available locally then '
-             'create a username directory and volume')
+             'create a username directory and volume'
+    )
+
 
     local_user_volume_path = Unicode(
-	'/mnt/jupyterhub/notebooks/{username}',
+	'/mnt/jupyterhub/{username}',
 	config=True,
-	help='local directory that mounts a shared filesystem')
+	help='local directory that mounts a shared filesystem'
+    )
 
     def _expand_user_properties(self, template):
         # Make sure username matches the restrictions for DNS labels
@@ -899,4 +902,6 @@ class KubeSpawner(Spawner):
             'JPY_HUB_PREFIX': self.hub.server.base_url,
             'JPY_HUB_API_URL': self.accessible_hub_api_url
         })
+        if self.notebook_dir:
+            env.update(dict(NOTEBOOK_DIR=self.notebook_dir))
         return env
