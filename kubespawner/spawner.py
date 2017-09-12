@@ -585,6 +585,18 @@ class KubeSpawner(Spawner):
         """
     )
 
+
+    create_user_volume_locally = Bool(
+        False,
+        config=True,
+        help='If shared storage is available locally then '
+             'create a username directory and volume')
+
+    local_user_volume_path = Unicode(
+	'/mnt/jupyterhub/notebooks/{username}',
+	config=True,
+	help='local directory that mounts a shared filesystem')
+
     def _expand_user_properties(self, template):
         # Make sure username matches the restrictions for DNS labels
         safe_chars = set(string.ascii_lowercase + string.digits)
@@ -756,8 +768,32 @@ class KubeSpawner(Spawner):
     def asynchronize(self, method, *args, **kwargs):
         return method(*args, **kwargs)
 
+
+    # Taken from sveesible/jupyterhub-kubernetes-spawner
+    def _create_user_notebook_dir(self):
+        """Create the new user's notebook directory.
+           Assuming that the Hub container is mounting a remote filesystem that will
+           be shared by the spawned user containers, this will create a folder
+           within the defined local_user_volume_path directory with the username.
+
+           The volumes and volumeMounts in the Pod manifest must be defined properly
+           in the jupyterhub_config.py file using this as an example:
+           c.Kubernetespawner.volumes=[ {"name": "{username}-nfs", "nfs": {"path":
+           "/mnt/jupyterhub/notebooks/{username}","server":"10.0.0.2"}}]
+           c.Kubernetespawner.volume_mounts=[ {"name": "{username}-nfs", "mountPath":
+           "/mnt/notebooks"} ]
+        """
+        if self.create_user_volume_locally:
+            user_dir = self._expand_user_properties(self.local_user_volume_path)
+            self.log.debug('UserDir for NFS  %s ', user_dir)
+        if not os.path.exists(user_dir):
+            os.makedirs(user_dir)
+
     @gen.coroutine
     def start(self):
+        # enolfc: since we do not know a priori the users, create some directory
+        # here for the notebooks in the persistent volume
+        self._create_user_notebook_dir()
         self.log.info("STORAGE PVC ENSURE %s" % self.user_storage_pvc_ensure)
         if self.user_storage_pvc_ensure:
             pvc = self.get_pvc_manifest()
