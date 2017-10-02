@@ -660,7 +660,7 @@ class KubeSpawner(Spawner):
             'heritage': 'jupyterhub',
             'component': 'singleuser-server',
             'app': 'jupyterhub',
-            'hub.jupyter.org/username': escapism.escape(self.user.name)
+            'hub.jupyter.org/userid': escapism.escape(str(self.user.id))
         }
 
         labels.update(self._expand_all(self.singleuser_extra_labels))
@@ -697,7 +697,7 @@ class KubeSpawner(Spawner):
         labels = {
             'heritage': 'jupyterhub',
             'app': 'jupyterhub',
-            'hub.jupyter.org/username': escapism.escape(self.user.name)
+            'hub.jupyter.org/userid': escapism.escape(str(self.user.id))
         }
 
         labels.update(self._expand_all(self.user_storage_extra_labels))
