@@ -789,8 +789,8 @@ class KubeSpawner(Spawner):
         if self.create_user_volume_locally:
             user_dir = self._expand_user_properties(self.local_user_volume_path)
             self.log.debug('UserDir for NFS  %s ', user_dir)
-        if not os.path.exists(user_dir):
-            os.makedirs(user_dir)
+            if not os.path.exists(user_dir):
+              os.makedirs(user_dir)
 
     @gen.coroutine
     def start(self):
