@@ -74,6 +74,46 @@ class KubeSpawner(Spawner):
             # Our default port is 8888
             self.port = 8888
 
+
+    custom_images_list = List(
+        [],
+        config=True,
+        help='List of Docker Images users choose in the spawn form.')
+
+    use_options_form = Bool(
+        False,
+        config=True,
+        help='Setting this to true will enable the default options '
+             'form which uses Environment variables to capture which '
+             'image specs to use and give resource limits options')
+
+    def _options_form_default(self):
+        if self.use_options_form != True:
+            return ''
+        default_env = "YOURNAME=%s\n" % self.user.name
+        image_select = self._load_custom_images_list()
+        return """
+               <label for="env">Environment variables (one per line)</label>
+               <textarea name="env">{env}</textarea>
+               {image}
+               """.format(env=default_env, image=image_select)
+
+    def _load_custom_images_list(self):
+        if self.custom_images_list:
+            image_dropdown = [
+		        '<label for="custom_image">Choose custom image</label>',
+		        '<select id="custom_image" name="custom_image">',
+		        '<option value="default">default</option>'
+	        ]
+            for i in self.custom_images_list:
+                val = '<option value="{}">{}</option>'.format(i, i)
+                image_dropdown.append(val)
+            image_dropdown.append('</select>')
+            return ''.join(image_dropdown)
+        else:
+	        return ''
+
+
     k8s_api_threadpool_workers = Integer(
         # Set this explicitly, since this is the default in Python 3.5+
         # but not in 3.4
@@ -665,9 +705,13 @@ class KubeSpawner(Spawner):
 
         labels.update(self._expand_all(self.singleuser_extra_labels))
 
+        image_spec = self.user_options.get('custom_image',
+                                           self.singleuser_image_spec)
+        self.log.info("Will use %s as image spec", image_spec)
+
         return make_pod(
             name=self.pod_name,
-            image_spec=self.singleuser_image_spec,
+            image_spec=image_spec,
             image_pull_policy=self.singleuser_image_pull_policy,
             image_pull_secret=self.singleuser_image_pull_secrets,
             port=self.port,
@@ -797,10 +841,8 @@ class KubeSpawner(Spawner):
         # enolfc: since we do not know a priori the users, create some directory
         # here for the notebooks in the persistent volume
         self._create_user_notebook_dir()
-        self.log.info("STORAGE PVC ENSURE %s" % self.user_storage_pvc_ensure)
         if self.user_storage_pvc_ensure:
             pvc = self.get_pvc_manifest()
-            self.log.info("PVC %s" % pvc)
             try:
                 yield self.asynchronize(
                     self.api.create_namespaced_persistent_volume_claim,
@@ -811,7 +853,6 @@ class KubeSpawner(Spawner):
                 if e.status == 409:
                     self.log.info("PVC " + self.pvc_name + " already exists, so did not create new pvc.")
                 else:
-                    self.log.info("PUM %s" % e)
                     raise
 
         # If we run into a 409 Conflict error, it means a pod with the
@@ -891,6 +932,24 @@ class KubeSpawner(Spawner):
                 break
         return args
 
+    def options_from_form(self, form_data):
+        options = {}
+        options['env'] = env = {}
+        if 'env' in form_data:
+            for line in form_data['env'][0].splitlines():
+                if line:
+                    try:
+                        key, value = line.split('=', 1)
+                        if key.strip():
+                            env[key.strip()] = value.strip()
+                    except ValueError:
+                        pass
+        if 'custom_image' in form_data:
+            if form_data['custom_image'][0] != 'default':
+                options['custom_image'] = form_data['custom_image'][0]
+        return options
+
+
     def get_env(self):
         # HACK: This is deprecated, and should be removed soon.
         # We set these to be compatible with DockerSpawner and earlie KubeSpawner
@@ -904,4 +963,6 @@ class KubeSpawner(Spawner):
         })
         if self.notebook_dir:
             env.update(dict(NOTEBOOK_DIR=self.notebook_dir))
+        if 'env' in self.user_options:
+            env.update(self.user_options['env'])
         return env
