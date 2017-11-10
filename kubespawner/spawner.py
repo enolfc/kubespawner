@@ -959,7 +959,9 @@ class KubeSpawner(Spawner):
             'JPY_COOKIE_NAME': self.user.server.cookie_name,
             'JPY_BASE_URL': self.user.server.base_url,
             'JPY_HUB_PREFIX': self.hub.server.base_url,
-            'JPY_HUB_API_URL': self.accessible_hub_api_url
+            'JPY_HUB_API_URL': self.accessible_hub_api_url,
+            # Replacing the URL from the base class
+            'JUPYTERHUB_API_URL': self.accessible_hub_api_url
         })
         if self.notebook_dir:
             env.update(dict(NOTEBOOK_DIR=self.notebook_dir))
