@@ -105,8 +105,8 @@ class KubeSpawner(Spawner):
 		        '<select id="custom_image" name="custom_image">',
 		        '<option value="default">default</option>'
 	        ]
-            for i in self.custom_images_list:
-                val = '<option value="{}">{}</option>'.format(i, i)
+            for k, v in self.custom_images_list:
+                val = '<option value="{}">{}</option>'.format(k, v)
                 image_dropdown.append(val)
             image_dropdown.append('</select>')
             return ''.join(image_dropdown)
