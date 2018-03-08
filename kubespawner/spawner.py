@@ -748,7 +748,7 @@ class KubeSpawner(Spawner):
         label_selector = self._expand_all(self.user_storage_pvc_selector)
         self.log.info("SEL %s" % label_selector)
         self.log.info("HEEEEERE!")
-        self.log.info("%s %s %s %s %s %s"
+        self.log.info("%s %s %s %s %s %s",
             self.pvc_name,
             self.user_storage_class,
             self.user_storage_access_modes,
